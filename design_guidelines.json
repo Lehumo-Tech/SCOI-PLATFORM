@@ -1,0 +1,99 @@
+{
+  "theme": "light",
+  "archetype": "4",
+  "archetype_name": "Swiss & High-Contrast",
+  "typography": {
+    "heading_font": "IBM Plex Sans",
+    "body_font": "IBM Plex Sans",
+    "mono_font": "IBM Plex Mono",
+    "hierarchy": {
+      "h1": "text-4xl sm:text-5xl font-black tracking-tighter",
+      "h2": "text-2xl sm:text-3xl font-bold tracking-tight",
+      "h3": "text-xl sm:text-2xl font-semibold",
+      "h4": "text-lg sm:text-xl font-semibold",
+      "body": "text-sm sm:text-base leading-relaxed text-slate-800",
+      "small_label": "text-xs uppercase tracking-[0.2em] font-bold text-slate-500"
+    }
+  },
+  "colors": {
+    "background": {
+      "page": "#F8FAFC",
+      "container": "#FFFFFF"
+    },
+    "text": {
+      "primary": "#0F172A",
+      "secondary": "#475569",
+      "tertiary": "#94A3B8"
+    },
+    "border": {
+      "default": "#E2E8F0",
+      "hover": "#CBD5E1",
+      "active": "#94A3B8"
+    },
+    "accent": {
+      "primary": "#0F172A",
+      "primary_hover": "#334155",
+      "red_flag": "#DC2626",
+      "red_flag_bg": "#FEF2F2",
+      "interactive_blue": "#2563EB",
+      "success": "#16A34A",
+      "warning": "#D97706"
+    }
+  },
+  "layout_and_spacing": {
+    "container_padding": "p-6 sm:p-8",
+    "grid_strategy": "Control Room Grid",
+    "base_grid": "grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-px bg-slate-200 border border-slate-200",
+    "radius": "rounded-sm",
+    "shadows": {
+      "default": "none",
+      "hover": "shadow-sm"
+    }
+  },
+  "surfaces": {
+    "dashboard_cards": "bg-white p-6 transition-colors duration-200 hover:bg-slate-50",
+    "header": "bg-white/90 backdrop-blur-xl border-b border-slate-200 z-50",
+    "sidebar": "bg-slate-50 border-r border-slate-200",
+    "borders": "Expose the grid skeleton using 1px borders everywhere. Avoid card shadows."
+  },
+  "motion_and_interaction": {
+    "hover_states": "hover:bg-slate-900 hover:text-white transition-all duration-200",
+    "focus_states": "focus:ring-2 focus:ring-slate-900 focus:outline-none",
+    "animations": "Minimal. Fast micro-interactions for feedback. No slow fades."
+  },
+  "components": {
+    "buttons": "rounded-sm font-semibold tracking-tight uppercase text-xs px-4 py-2",
+    "inputs": "rounded-sm border-slate-300 focus:border-slate-900 focus:ring-slate-900 text-sm",
+    "badges": "rounded-none text-xs uppercase tracking-widest px-2 py-1 font-bold",
+    "tables": "Dense, text-sm, strict horizontal borders only. Striped rows on hover.",
+    "graphs": "Use React Flow (@xyflow/react) for interactive node relationship mapping. Use Recharts for analytical widgets.",
+    "search": "Prominent Command-K style interface or massive brutalist input field."
+  },
+  "media_and_icons": {
+    "icon_library": "@phosphor-icons/react",
+    "icon_style": "weight=\"bold\"",
+    "image_urls": [
+      {
+        "category": "auth_background",
+        "url": "https://images.pexels.com/photos/3137068/pexels-photo-3137068.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Minimalist black and white geometric pattern of modern architecture. Perfect for an authoritative login page."
+      },
+      {
+        "category": "logo_placeholder",
+        "url": "https://images.pexels.com/photos/5369487/pexels-photo-5369487.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Abstract red and white geometric shape. Can be used as a small accent mark or branding banner if needed."
+      }
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Strictly adhere to the Swiss Brutalist aesthetic: sharp edges (max rounded-sm), zero soft shadows, 1px strict borders.",
+    "Run `yarn add @phosphor-icons/react` for dense, professional icons.",
+    "Run `yarn add @xyflow/react` to implement the 2-hop relationship graph. It is the best choice for OSINT entity mapping.",
+    "Run `yarn add recharts` for any additional data visualizations.",
+    "The Red Flag Detection should heavily utilize the DC2626 (Signal Red) color against stark white to create immediate visual tension and urgency.",
+    "Search functionality must be front-and-center (e.g., a massive input or a Command-K modal).",
+    "Do not use generic Inter font. Import and use IBM Plex Sans exclusively for UI text and IBM Plex Mono for data strings.",
+    "All interactive elements MUST include data-testid attributes for testing.",
+    "Ensure tables are highly compact for data scannability."
+  ]
+}
