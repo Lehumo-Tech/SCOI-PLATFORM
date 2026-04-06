@@ -15,16 +15,24 @@ def normalize_name(name: str) -> str:
     return name.lower().strip().replace("  ", " ")
 
 def fuzzy_match_entities(query: str, candidates: List[Dict], threshold: int = 80) -> List[Tuple[Dict, float]]:
-    """Match entities using fuzzy string matching"""
+    """Match entities using fuzzy string matching + substring + partial matching"""
     query_norm = normalize_name(query)
     results = []
     
     for candidate in candidates:
         name_norm = normalize_name(candidate.get("raw_name", ""))
-        score = fuzz.ratio(query_norm, name_norm)
         
-        if score >= threshold:
-            results.append((candidate, score / 100.0))
+        # Full ratio
+        score = fuzz.ratio(query_norm, name_norm)
+        # Partial ratio (substring-aware)
+        partial_score = fuzz.partial_ratio(query_norm, name_norm)
+        # Token sort (handles word order)
+        token_score = fuzz.token_sort_ratio(query_norm, name_norm)
+        
+        best_score = max(score, partial_score, token_score)
+        
+        if best_score >= threshold:
+            results.append((candidate, best_score / 100.0))
     
     results.sort(key=lambda x: x[1], reverse=True)
     return results
