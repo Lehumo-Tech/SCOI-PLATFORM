@@ -1,34 +1,93 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+.App {
+  min-height: 100vh;
+  background: #F8FAFC;
+  font-family: 'IBM Plex Sans', sans-serif;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+.scoi-header {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(24px);
+  border-bottom: 1px solid #E2E8F0;
+  position: sticky;
+  top: 0;
+  z-index: 50;
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+.scoi-button-primary {
+  background: #0F172A;
+  color: white;
+  border-radius: 0.125rem;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.5rem 1rem;
+  transition: all 200ms;
 }
 
-.App-link {
-    color: #61dafb;
+.scoi-button-primary:hover {
+  background: #334155;
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+.scoi-card {
+  background: white;
+  padding: 1.5rem;
+  transition: colors 200ms;
+  border: 1px solid #E2E8F0;
+  border-radius: 0.125rem;
+}
+
+.scoi-card:hover {
+  background: #F8FAFC;
+}
+
+.scoi-input {
+  border: 1px solid #CBD5E1;
+  border-radius: 0.125rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  transition: all 200ms;
+}
+
+.scoi-input:focus {
+  outline: none;
+  border-color: #0F172A;
+  ring: 2px;
+  ring-color: #0F172A;
+}
+
+.scoi-badge-red {
+  background: #FEF2F2;
+  color: #DC2626;
+  border-radius: 0;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0.25rem 0.5rem;
+  font-weight: 700;
+}
+
+.scoi-table {
+  font-size: 0.875rem;
+  width: 100%;
+}
+
+.scoi-table th {
+  text-align: left;
+  padding: 0.75rem;
+  border-bottom: 1px solid #E2E8F0;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  color: #64748B;
+}
+
+.scoi-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #E2E8F0;
+}
+
+.scoi-table tr:hover {
+  background: #F8FAFC;
 }

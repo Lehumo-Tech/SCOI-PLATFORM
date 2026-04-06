@@ -1,0 +1,69 @@
+{
+  "summary": "Completed comprehensive testing of SCOI corruption investigation platform. Backend APIs 76.9% success rate, Frontend 90%+ functional. Core features working: authentication, entity search, asset tracing, red flags, network graphs, admin functions.",
+  "backend_issues": {
+    "critical_bugs": [],
+    "minor_bugs": [
+      {
+        "endpoint": "/api/entities/search",
+        "issue": "Fuzzy search threshold too high (70) - 'Ndlovu' search fails with fuzzy=true but works with fuzzy=false",
+        "impact": "Users may not find entities with partial name matches",
+        "fix_priority": "MEDIUM"
+      },
+      {
+        "endpoint": "/api/entities/",
+        "issue": "Returns 200 instead of 201 for successful entity creation",
+        "impact": "Minor HTTP status code inconsistency",
+        "fix_priority": "LOW"
+      }
+    ],
+    "external_issues": [
+      {
+        "endpoint": "/api/entities/reports/generate",
+        "issue": "LLM budget exceeded - Budget has been exceeded! Current cost: 0.02469075, Max budget: 0.001",
+        "impact": "Report generation fails due to Emergent LLM key budget limit",
+        "fix_priority": "EXTERNAL"
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Entity search for Ndlovu",
+        "issue": "No results shown due to backend fuzzy search threshold being too high",
+        "affected_selectors": ["[data-testid='search-results']"]
+      }
+    ],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "Health check endpoint working",
+    "Admin login with correct credentials (admin@scoi.gov.za / SCOI2026!Admin)",
+    "Investigator login working",
+    "Dashboard redirects correctly after login",
+    "All dashboard tabs accessible (Entity Search, Network Graph, Asset Tracing, Red Flags, Data Ingestion, Audit Logs)",
+    "Entity search for 'Mokwena' returns results with Thabo Mokwena",
+    "Network graph generation working",
+    "Asset tracing finds 2 assets for Mokwena (including trust-linked assets)",
+    "Red flag evaluation finds 4 red flags for Mokwena",
+    "Admin-only tabs (Data Ingestion, Audit Logs) properly restricted and functional",
+    "Logout functionality working correctly",
+    "Authentication state management working",
+    "CORS and cookie-based auth working",
+    "Seeded mock data present (7 persons, 5 companies, 2 trusts, 5 tenders, 1 judgment, 4 assets)"
+  ],
+  "test_report_links": [
+    "/app/backend_test.py"
+  ],
+  "success_percentage": {
+    "backend": "76.9%",
+    "frontend": "90%+"
+  },
+  "action_item_for_main_agent": "1. Lower fuzzy search threshold from 70 to 60 in entities.py line 78 to improve search results. 2. Fix entity creation endpoint to return 201 instead of 200. 3. LLM report generation requires budget increase (external issue).",
+  "updated_files": [
+    "/app/backend_test.py",
+    "/app/backend/services/red_flag_engine.py"
+  ],
+  "should_call_test_agent_after_fix": "false",
+  "should_main_agent_test_itself": "true"
+}
