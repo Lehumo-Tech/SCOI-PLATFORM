@@ -218,9 +218,15 @@ async def export_csv(
     writer.writerow([])
     writer.writerow(["RELATIONSHIPS"])
     writer.writerow(["From", "To", "Type", "Confidence", "Evidence"])
-    for rel in result.get("relationships_found", []):
-        if isinstance(rel, dict):
-            writer.writerow([rel.get("from"), rel.get("to"), rel.get("type"), rel.get("confidence"), ", ".join(rel.get("evidence", []))])
+    rels = result.get("relationships_found", [])
+    if isinstance(rels, list):
+        for rel in rels:
+            if isinstance(rel, dict):
+                evidence = rel.get("evidence", [])
+                evidence_str = ", ".join(evidence) if isinstance(evidence, list) else str(evidence)
+                writer.writerow([rel.get("from"), rel.get("to"), rel.get("type"), rel.get("confidence"), evidence_str])
+    else:
+        writer.writerow([f"Total relationships: {rels}", "", "", "", ""])
 
     content = output.getvalue()
     return StreamingResponse(
