@@ -390,6 +390,121 @@ class SCOIAPITester:
             self.log_test("Report Generation", False, str(e))
             return False
 
+    def test_watchlist_get(self):
+        """Test getting watchlist"""
+        try:
+            response = self.session.get(f"{self.base_url}/api/watchlist/", timeout=10)
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                items_count = len(data.get('items', []))
+                details += f", Watchlist Items: {items_count}"
+                
+                # Check if we have the expected seeded entities (Mokwena + Mbokodo)
+                if items_count >= 2:
+                    details += " (Expected seeded entities found)"
+                else:
+                    details += " (Warning: Expected 2+ seeded entities)"
+            else:
+                details += f", Response: {response.text[:100]}"
+                
+            self.log_test("Watchlist Get", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Watchlist Get", False, str(e))
+            return False
+
+    def test_watchlist_alerts(self):
+        """Test getting watchlist alerts"""
+        try:
+            response = self.session.get(f"{self.base_url}/api/watchlist/alerts?limit=50", timeout=10)
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                alerts_count = len(data.get('alerts', []))
+                details += f", Alerts: {alerts_count}"
+                
+                # Check if we have active alerts
+                if alerts_count > 0:
+                    details += " (Active alerts found)"
+                    # Check alert structure
+                    first_alert = data['alerts'][0]
+                    if all(key in first_alert for key in ['id', 'entity_name', 'alert_type', 'severity']):
+                        details += " ✓"
+                else:
+                    details += " (No alerts - may be expected)"
+            else:
+                details += f", Response: {response.text[:100]}"
+                
+            self.log_test("Watchlist Alerts", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Watchlist Alerts", False, str(e))
+            return False
+
+    def test_watchlist_add(self):
+        """Test adding entity to watchlist"""
+        if not self.entity_ids:
+            self.log_test("Watchlist Add", False, "No entity IDs available")
+            return False
+            
+        try:
+            # Use the first available entity ID
+            entity_id = self.entity_ids[0]
+            add_data = {
+                "entity_id": entity_id,
+                "notes": "API Test - Added via backend test"
+            }
+            response = self.session.post(
+                f"{self.base_url}/api/watchlist/add",
+                json=add_data,
+                timeout=15
+            )
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                details += f", Added: {data.get('entity_name', 'Unknown')}"
+                alerts_generated = data.get('alerts_generated', 0)
+                details += f", Alerts Generated: {alerts_generated}"
+            else:
+                details += f", Response: {response.text[:100]}"
+                # If entity already on watchlist, that's also acceptable
+                if response.status_code == 400 and "already on watchlist" in response.text:
+                    success = True
+                    details = "Status: 400 (Entity already on watchlist - acceptable)"
+                
+            self.log_test("Watchlist Add", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Watchlist Add", False, str(e))
+            return False
+
+    def test_watchlist_scan(self):
+        """Test watchlist scan functionality"""
+        try:
+            response = self.session.post(f"{self.base_url}/api/watchlist/scan", json={}, timeout=20)
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                message = data.get('message', '')
+                details += f", Result: {message}"
+            else:
+                details += f", Response: {response.text[:100]}"
+                
+            self.log_test("Watchlist Scan", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Watchlist Scan", False, str(e))
+            return False
+
     def test_logout(self):
         """Test logout functionality"""
         try:
@@ -431,6 +546,13 @@ class SCOIAPITester:
         self.test_entity_graph()
         self.test_asset_tracing()
         self.test_red_flags()
+        
+        # NEW: Watchlist/Alert system tests
+        print("\n👁️ Testing Watchlist/Alert System...")
+        self.test_watchlist_get()
+        self.test_watchlist_alerts()
+        self.test_watchlist_add()
+        self.test_watchlist_scan()
         
         # Admin functionality tests
         self.test_create_entity()

@@ -11,7 +11,7 @@ import os
 import logging
 from datetime import datetime, timezone
 
-from routes import auth, entities, audit, assets
+from routes import auth, entities, audit, assets, watchlist
 from utils.auth import hash_password, verify_password
 from services.seed_data import seed_mock_data
 
@@ -33,6 +33,7 @@ app.include_router(auth.router, prefix="/api")
 app.include_router(entities.router, prefix="/api")
 app.include_router(audit.router, prefix="/api")
 app.include_router(assets.router, prefix="/api")
+app.include_router(watchlist.router, prefix="/api")
 
 @app.on_event("startup")
 async def startup_event():
@@ -46,6 +47,9 @@ async def startup_event():
     await db.relationships.create_index("to_entity_id")
     await db.password_reset_tokens.create_index("expires_at", expireAfterSeconds=0)
     await db.login_attempts.create_index("identifier")
+    await db.watchlist.create_index([("user_id", 1), ("entity_id", 1)], unique=True)
+    await db.alerts.create_index("watchlist_item_id")
+    await db.alerts.create_index("created_at")
     
     admin_email = os.environ.get("ADMIN_EMAIL", "admin@scoi.gov.za")
     admin_password = os.environ.get("ADMIN_PASSWORD", "SCOI2026!Admin")

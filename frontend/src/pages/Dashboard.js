@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { MagnifyingGlass, SignOut, Database, Graph, Flag, FileText, ClockCounterClockwise, UserCircle, Detective } from '@phosphor-icons/react';
+import { MagnifyingGlass, SignOut, Database, Graph, Flag, FileText, ClockCounterClockwise, UserCircle, Detective, Eye } from '@phosphor-icons/react';
 import SearchEntities from '../components/SearchEntities';
 import EntityGraph from '../components/EntityGraph';
 import RedFlagDashboard from '../components/RedFlagDashboard';
 import AuditLogs from '../components/AuditLogs';
 import DataIngestion from '../components/DataIngestion';
 import AssetTracing from '../components/AssetTracing';
+import Watchlist from '../components/Watchlist';
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -16,6 +17,7 @@ const Dashboard = () => {
     { id: 'search', label: 'Entity Search', icon: MagnifyingGlass },
     { id: 'graph', label: 'Network Graph', icon: Graph },
     { id: 'assets', label: 'Asset Tracing', icon: Detective },
+    { id: 'watchlist', label: 'Watchlist', icon: Eye },
     { id: 'red-flags', label: 'Red Flags', icon: Flag },
     ...(user?.role === 'admin' ? [{ id: 'ingest', label: 'Data Ingestion', icon: Database }] : []),
     ...(user?.role === 'admin' ? [{ id: 'audit', label: 'Audit Logs', icon: ClockCounterClockwise }] : []),
@@ -81,6 +83,7 @@ const Dashboard = () => {
           {activeTab === 'search' && <SearchEntities />}
           {activeTab === 'graph' && <EntityGraph />}
           {activeTab === 'assets' && <AssetTracing />}
+          {activeTab === 'watchlist' && <Watchlist />}
           {activeTab === 'red-flags' && <RedFlagDashboard />}
           {activeTab === 'ingest' && <DataIngestion />}
           {activeTab === 'audit' && <AuditLogs />}

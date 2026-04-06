@@ -2,6 +2,13 @@ import os
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 from typing import List, Dict, Optional
 import json
+import logging
+
+logger = logging.getLogger(__name__)
+
+# Use cheapest available model
+LLM_PROVIDER = "gemini"
+LLM_MODEL = "gemini-2.5-flash-lite"
 
 class LLMService:
     def __init__(self):
@@ -9,78 +16,60 @@ class LLMService:
         if not self.api_key:
             raise ValueError("EMERGENT_LLM_KEY not found in environment")
     
+    def _create_chat(self, session_id: str, system_message: str) -> LlmChat:
+        return LlmChat(
+            api_key=self.api_key,
+            session_id=session_id,
+            system_message=system_message
+        ).with_model(LLM_PROVIDER, LLM_MODEL)
+    
+    async def _safe_send(self, chat: LlmChat, prompt: str) -> Optional[str]:
+        """Send message with graceful budget/error fallback"""
+        try:
+            message = UserMessage(text=prompt)
+            response = await chat.send_message(message)
+            return response
+        except Exception as e:
+            error_msg = str(e)
+            if "budget" in error_msg.lower() or "exceeded" in error_msg.lower():
+                logger.warning(f"LLM budget exceeded: {error_msg}")
+                return None
+            logger.error(f"LLM call failed: {error_msg}")
+            return None
+    
     async def enhance_entity_matching(self, entity1: Dict, entity2: Dict) -> Dict:
         """Use LLM to determine if two entities are likely the same"""
-        chat = LlmChat(
-            api_key=self.api_key,
-            session_id=f"entity_match_{entity1.get('id', 'unknown')}",
-            system_message="You are an expert at entity resolution for corruption investigations. Analyze if two entities refer to the same real-world person or organization."
-        ).with_model("openai", "gpt-5.2")
+        chat = self._create_chat(
+            f"match_{entity1.get('id', 'x')}",
+            "Entity resolution expert. Respond ONLY with JSON."
+        )
         
-        prompt = f"""Compare these two entities and determine if they likely refer to the same person/organization:
-
-Entity 1:
-Type: {entity1.get('type')}
-Name: {entity1.get('raw_name')}
-Metadata: {json.dumps(entity1.get('metadata', {}), indent=2)}
-
-Entity 2:
-Type: {entity2.get('type')}
-Name: {entity2.get('raw_name')}
-Metadata: {json.dumps(entity2.get('metadata', {}), indent=2)}
-
-Respond ONLY with a JSON object:
-{{
-  "match": true/false,
-  "confidence": 0.0-1.0,
-  "reasoning": "brief explanation"
-}}"""
+        prompt = f"""Do these refer to the same entity? Entity 1: {entity1.get('raw_name')} ({entity1.get('type')}). Entity 2: {entity2.get('raw_name')} ({entity2.get('type')}). Reply JSON: {{"match":bool,"confidence":0-1,"reasoning":"brief"}}"""
         
-        message = UserMessage(text=prompt)
-        response = await chat.send_message(message)
-        
+        response = await self._safe_send(chat, prompt)
+        if not response:
+            return {"match": False, "confidence": 0.0, "reasoning": "LLM unavailable - budget exceeded or service error"}
         try:
-            result = json.loads(response)
-            return result
+            return json.loads(response)
         except:
-            return {"match": False, "confidence": 0.0, "reasoning": "Failed to parse LLM response"}
+            return {"match": False, "confidence": 0.0, "reasoning": "Parse error"}
     
     async def infer_relationships(self, entities: List[Dict]) -> List[Dict]:
         """Use LLM to infer potential relationships between entities"""
         if len(entities) < 2:
             return []
         
-        chat = LlmChat(
-            api_key=self.api_key,
-            session_id=f"relationship_inference_{len(entities)}",
-            system_message="You are an expert at analyzing corruption networks. Identify potential relationships between entities based on their metadata."
-        ).with_model("openai", "gpt-5.2")
+        chat = self._create_chat(
+            f"rel_{len(entities)}",
+            "Corruption network analyst. Respond ONLY with JSON array."
+        )
         
-        entities_str = "\n\n".join([
-            f"ID: {e.get('id')}\nType: {e.get('type')}\nName: {e.get('raw_name')}\nMetadata: {json.dumps(e.get('metadata', {}))}"
-            for e in entities[:10]
-        ])
+        entities_brief = ", ".join([f"{e.get('raw_name')} ({e.get('type')})" for e in entities[:8]])
+        prompt = f"""Identify relationships between: {entities_brief}. Reply JSON array: [{{"from_id":"id","to_id":"id","type":"rel","confidence":0-1,"reasoning":"brief"}}]. Empty [] if none."""
         
-        prompt = f"""Analyze these entities and identify potential relationships (director, beneficial owner, related to, etc.):
-
-{entities_str}
-
-Respond ONLY with a JSON array of relationships:
-[
-  {{
-    "from_id": "entity_id",
-    "to_id": "entity_id",
-    "type": "relationship_type",
-    "confidence": 0.0-1.0,
-    "reasoning": "brief explanation"
-  }}
-]
-
-If no relationships found, return empty array []."""
-        
-        message = UserMessage(text=prompt)
-        response = await chat.send_message(message)
-        
+        response = await self._safe_send(chat, prompt)
+        if not response:
+            return []
         try:
             result = json.loads(response)
             return result if isinstance(result, list) else []
@@ -88,37 +77,75 @@ If no relationships found, return empty array []."""
             return []
     
     async def generate_investigation_report(self, entity: Dict, relationships: List[Dict], red_flags: List[Dict]) -> str:
-        """Generate a comprehensive investigation report with citations"""
-        chat = LlmChat(
-            api_key=self.api_key,
-            session_id=f"report_{entity.get('id', 'unknown')}",
-            system_message="You are an investigative analyst for corruption cases. Generate detailed, factual reports with proper citations."
-        ).with_model("openai", "gpt-5.2")
+        """Generate investigation report with citations"""
+        chat = self._create_chat(
+            f"report_{entity.get('id', 'x')}",
+            "Investigative analyst. Generate factual Markdown reports with citations."
+        )
         
-        prompt = f"""Generate an investigative report for this entity:
-
-Entity:
-Type: {entity.get('type')}
-Name: {entity.get('raw_name')}
-Metadata: {json.dumps(entity.get('metadata', {}), indent=2)}
-Source: {entity.get('source')}
-
-Relationships ({len(relationships)}):
-{json.dumps(relationships, indent=2)}
-
-Red Flags ({len(red_flags)}):
-{json.dumps(red_flags, indent=2)}
-
-Generate a professional report in Markdown format with:
-1. Executive Summary
-2. Entity Profile
-3. Network Analysis (relationships)
-4. Red Flag Analysis
-5. Source Citations
-6. Compliance Warning (remind this is OSINT analysis, not legal determination)
-
-Use factual language only. Include confidence scores. Cite all sources."""
+        rel_summary = f"{len(relationships)} relationships found" if relationships else "No relationships"
+        flag_summary = json.dumps(red_flags[:5], default=str) if red_flags else "No red flags"
         
-        message = UserMessage(text=prompt)
-        response = await chat.send_message(message)
+        prompt = f"""Investigation report for {entity.get('raw_name')} ({entity.get('type')}).
+Source: {entity.get('source')}. Metadata: {json.dumps(entity.get('metadata', {}))}.
+{rel_summary}. Red flags: {flag_summary}.
+Generate Markdown: 1.Summary 2.Profile 3.Network 4.Red Flags 5.Sources 6.Compliance Warning (OSINT only, not legal)."""
+        
+        response = await self._safe_send(chat, prompt)
+        if not response:
+            return self._generate_fallback_report(entity, relationships, red_flags)
         return response
+    
+    async def analyze_watchlist_entity(self, entity: Dict, relationships: List[Dict]) -> Dict:
+        """Quick analysis for watchlist alerts"""
+        chat = self._create_chat(
+            f"watch_{entity.get('id', 'x')}",
+            "Alert analyst. Respond ONLY with JSON."
+        )
+        
+        prompt = f"""Analyze {entity.get('raw_name')} ({entity.get('type')}) with {len(relationships)} connections. Any suspicious patterns? Reply JSON: {{"risk_level":"low/medium/high/critical","summary":"1 sentence","flags":["list"]}}"""
+        
+        response = await self._safe_send(chat, prompt)
+        if not response:
+            return {"risk_level": "unknown", "summary": "LLM unavailable", "flags": []}
+        try:
+            return json.loads(response)
+        except:
+            return {"risk_level": "unknown", "summary": response[:200], "flags": []}
+    
+    def _generate_fallback_report(self, entity: Dict, relationships: List[Dict], red_flags: List[Dict]) -> str:
+        """Generate a basic report without LLM when budget is exceeded"""
+        name = entity.get('raw_name', 'Unknown')
+        etype = entity.get('type', 'unknown')
+        source = entity.get('source', 'Unknown')
+        metadata = entity.get('metadata', {})
+        
+        report = f"""# Investigation Report: {name}
+
+## Executive Summary
+This automated report covers entity **{name}** (type: {etype}) sourced from {source}.
+{len(relationships)} relationship(s) and {len(red_flags)} red flag(s) identified.
+
+## Entity Profile
+- **Name:** {name}
+- **Type:** {etype}
+- **Source:** {source}
+"""
+        for k, v in metadata.items():
+            report += f"- **{k}:** {v}\n"
+        
+        report += f"\n## Network Analysis\n{len(relationships)} relationship(s) detected.\n"
+        for r in relationships[:10]:
+            report += f"- {r.get('type', 'UNKNOWN')}: confidence {r.get('confidence', 'N/A')}\n"
+        
+        report += f"\n## Red Flag Analysis\n{len(red_flags)} flag(s) detected.\n"
+        for f in red_flags[:10]:
+            report += f"- **{f.get('rule_name', f.get('rule_id', 'Unknown'))}**: confidence {f.get('confidence', 'N/A')}\n"
+        
+        report += """
+## Compliance Warning
+This report is generated from publicly available OSINT data only. It does not constitute legal proof or accusation. Human verification required before any action. POPIA-compliant data handling in effect.
+
+*Report generated without AI assistance (budget fallback mode).*
+"""
+        return report
