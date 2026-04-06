@@ -11,7 +11,7 @@ import os
 import logging
 from datetime import datetime, timezone
 
-from routes import auth, entities, audit, assets, watchlist
+from routes import auth, entities, audit, assets, watchlist, investigations, download
 from utils.auth import hash_password, verify_password
 from services.seed_data import seed_mock_data
 
@@ -34,6 +34,8 @@ app.include_router(entities.router, prefix="/api")
 app.include_router(audit.router, prefix="/api")
 app.include_router(assets.router, prefix="/api")
 app.include_router(watchlist.router, prefix="/api")
+app.include_router(investigations.router, prefix="/api")
+app.include_router(download.router, prefix="/api")
 
 @app.on_event("startup")
 async def startup_event():

@@ -1,0 +1,56 @@
+{
+  "summary": "Comprehensive testing of SCOI V1.2 multi-agent investigation pipeline, ZIP download, and investigation export features. Backend API testing achieved 95.5% success rate (21/22 tests passed). Frontend testing confirmed all 8 dashboard tabs, Download ZIP button functionality, investigation interface with expandable sections, and past investigations display including Mokwena investigation.",
+  "backend_issues": {
+    "critical_bugs": [],
+    "flaky_endpoints": [
+      {
+        "endpoint": "/api/investigations/{id}/export/csv",
+        "issue": "Returns 500 Internal Server Error",
+        "impact": "Blocks CSV export functionality for investigations",
+        "fix_priority": "MEDIUM"
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Entity Search",
+        "issue": "Search for 'Thabo' does not return Thabo Mokwena in results",
+        "affected_selectors": ["search input", "search results"],
+        "fix_priority": "LOW"
+      }
+    ],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "Admin login with correct credentials (admin@scoi.gov.za / SCOI2026!Admin)",
+    "Dashboard loads with Download ZIP button in header",
+    "All 8 tabs present: Entity Search, Network Graph, Asset Tracing, Watchlist, Investigate, Red Flags, Data Ingestion, Audit Logs",
+    "Investigate tab shows past investigations including Mokwena Network Investigation",
+    "New Investigation form opens and accepts input",
+    "Multi-agent investigation pipeline runs successfully (5 agents)",
+    "Investigation results display with confidence, compliance score, red flags count",
+    "Investigation sections are expandable (red flags, audit trail, report)",
+    "Export Markdown functionality works",
+    "ZIP download endpoint returns valid ZIP file",
+    "Entity search finds Mokwena entities",
+    "Network graph generation works",
+    "Asset tracing functionality works",
+    "Watchlist and alerts system works",
+    "Red flag evaluation works",
+    "Audit logs accessible",
+    "Report generation works",
+    "All navigation between tabs works smoothly"
+  ],
+  "test_report_links": [
+    "/app/backend_test.py"
+  ],
+  "action_item_for_main_agent": "Fix CSV export endpoint returning 500 error in /api/investigations/{id}/export/csv. Minor issue: improve entity search to ensure 'Thabo' query returns Thabo Mokwena in results.",
+  "updated_files": [
+    "/app/backend_test.py"
+  ],
+  "success_percentage": "Backend: 95.5% (21/22), Frontend: 95% (19/20)",
+  "should_call_test_agent_after_fix": "false",
+  "should_main_agent_test_itself": "true"
+}

@@ -18,6 +18,7 @@ class SCOIAPITester:
         self.tests_run = 0
         self.tests_passed = 0
         self.entity_ids = []  # Store entity IDs for testing
+        self.investigation_id = None  # Store investigation ID for export tests
 
     def log_test(self, name, success, details=""):
         """Log test result"""
@@ -505,6 +506,169 @@ class SCOIAPITester:
             self.log_test("Watchlist Scan", False, str(e))
             return False
 
+    def test_investigation_pipeline(self):
+        """Test multi-agent investigation pipeline"""
+        if not self.entity_ids:
+            self.log_test("Investigation Pipeline", False, "No entity IDs available")
+            return False
+            
+        try:
+            # Use first entity ID for investigation
+            entity_id = self.entity_ids[0]
+            investigation_data = {
+                "query": "API Test Investigation",
+                "entity_ids": [entity_id],
+                "title": "Backend Test Investigation"
+            }
+            response = self.session.post(
+                f"{self.base_url}/api/investigations/run",
+                json=investigation_data,
+                timeout=60  # Investigation pipeline can take time
+            )
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                details += f", ID: {data.get('id', 'Unknown')[:8]}..."
+                details += f", Status: {data.get('status', 'Unknown')}"
+                details += f", Confidence: {data.get('confidence', 0)*100:.0f}%"
+                details += f", Red Flags: {data.get('red_flags_count', 0)}"
+                
+                # Store investigation ID for export tests
+                self.investigation_id = data.get('id')
+            else:
+                details += f", Response: {response.text[:200]}"
+                
+            self.log_test("Investigation Pipeline", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Investigation Pipeline", False, str(e))
+            return False
+
+    def test_investigation_list(self):
+        """Test listing investigations"""
+        try:
+            response = self.session.get(f"{self.base_url}/api/investigations/", timeout=10)
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                data = response.json()
+                investigations_count = len(data)
+                details += f", Investigations: {investigations_count}"
+                
+                # Check if we have the expected Mokwena investigation
+                mokwena_found = any('mokwena' in inv.get('title', '').lower() or 
+                                  'mokwena' in inv.get('query', '').lower() for inv in data)
+                if mokwena_found:
+                    details += ", Mokwena investigation found ✓"
+                else:
+                    details += ", Mokwena investigation not found"
+            else:
+                details += f", Response: {response.text[:100]}"
+                
+            self.log_test("Investigation List", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Investigation List", False, str(e))
+            return False
+
+    def test_investigation_export_markdown(self):
+        """Test investigation Markdown export"""
+        if not hasattr(self, 'investigation_id') or not self.investigation_id:
+            self.log_test("Investigation Export Markdown", False, "No investigation ID available")
+            return False
+            
+        try:
+            response = self.session.get(
+                f"{self.base_url}/api/investigations/{self.investigation_id}/export/markdown",
+                timeout=15
+            )
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                content_length = len(response.content)
+                details += f", Content Length: {content_length} bytes"
+                # Check if it's actually markdown content
+                if b'#' in response.content[:100]:  # Basic markdown check
+                    details += " (Valid Markdown)"
+                else:
+                    details += " (Warning: May not be valid Markdown)"
+            else:
+                details += f", Response: {response.text[:100]}"
+                
+            self.log_test("Investigation Export Markdown", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Investigation Export Markdown", False, str(e))
+            return False
+
+    def test_investigation_export_csv(self):
+        """Test investigation CSV export"""
+        if not hasattr(self, 'investigation_id') or not self.investigation_id:
+            self.log_test("Investigation Export CSV", False, "No investigation ID available")
+            return False
+            
+        try:
+            response = self.session.get(
+                f"{self.base_url}/api/investigations/{self.investigation_id}/export/csv",
+                timeout=15
+            )
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                content_length = len(response.content)
+                details += f", Content Length: {content_length} bytes"
+                # Check if it's actually CSV content
+                if b',' in response.content[:100]:  # Basic CSV check
+                    details += " (Valid CSV)"
+                else:
+                    details += " (Warning: May not be valid CSV)"
+            else:
+                details += f", Response: {response.text[:100]}"
+                
+            self.log_test("Investigation Export CSV", success, details)
+            return success
+        except Exception as e:
+            self.log_test("Investigation Export CSV", False, str(e))
+            return False
+
+    def test_zip_download(self):
+        """Test ZIP download endpoint"""
+        try:
+            response = self.session.get(f"{self.base_url}/api/download/project-zip", timeout=30)
+            success = response.status_code == 200
+            details = f"Status: {response.status_code}"
+            
+            if success:
+                content_length = len(response.content)
+                details += f", File Size: {content_length:,} bytes"
+                
+                # Check if it's actually a ZIP file
+                if response.content.startswith(b'PK'):  # ZIP file signature
+                    details += " (Valid ZIP file)"
+                else:
+                    details += " (Warning: May not be valid ZIP)"
+                    success = False
+                    
+                # Check content type
+                content_type = response.headers.get('content-type', '')
+                if 'zip' in content_type:
+                    details += " ✓"
+                else:
+                    details += f" (Content-Type: {content_type})"
+            else:
+                details += f", Response: {response.text[:100]}"
+                
+            self.log_test("ZIP Download", success, details)
+            return success
+        except Exception as e:
+            self.log_test("ZIP Download", False, str(e))
+            return False
+
     def test_logout(self):
         """Test logout functionality"""
         try:
@@ -546,6 +710,17 @@ class SCOIAPITester:
         self.test_entity_graph()
         self.test_asset_tracing()
         self.test_red_flags()
+        
+        # NEW: Investigation Pipeline tests
+        print("\n🤖 Testing Multi-Agent Investigation Pipeline...")
+        self.test_investigation_list()
+        self.test_investigation_pipeline()
+        self.test_investigation_export_markdown()
+        self.test_investigation_export_csv()
+        
+        # NEW: ZIP Download test
+        print("\n📦 Testing ZIP Download...")
+        self.test_zip_download()
         
         # NEW: Watchlist/Alert system tests
         print("\n👁️ Testing Watchlist/Alert System...")
