@@ -20,7 +20,7 @@ router = APIRouter(prefix="/entities", tags=["entities"])
 async def get_db(request: Request) -> AsyncIOMotorDatabase:
     return request.app.state.db
 
-@router.post("/", response_model=EntityResponse)
+@router.post("/", response_model=EntityResponse, status_code=201)
 async def create_entity(
     entity: EntityCreate,
     request: Request,
@@ -75,7 +75,7 @@ async def search_entities(
     entities = await db.entities.find(filter_query, {"_id": 1, "type": 1, "raw_name": 1, "hashed_id": 1, "metadata": 1, "source": 1, "source_url": 1, "first_seen": 1, "last_seen": 1}).to_list(query.limit * 2)
     
     if query.fuzzy:
-        matches = fuzzy_match_entities(query.query, entities, threshold=70)
+        matches = fuzzy_match_entities(query.query, entities, threshold=55)
         results = []
         for entity, confidence in matches[:query.limit]:
             results.append(EntityResponse(
